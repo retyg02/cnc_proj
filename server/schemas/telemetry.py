@@ -1,4 +1,3 @@
-# schemas/telemetry.py
 from pydantic import BaseModel, Field
 
 class MachineTelemetry(BaseModel):
@@ -13,3 +12,6 @@ class MachineResponse(BaseModel):
     status: str
     load_percent: int
     details: str | None = None
+
+class UpdateMachineCommand(BaseModel):
+    command: str = Field(..., description="New command (STOP, RESET, PAUSE)", max_length=50, example="STOP")

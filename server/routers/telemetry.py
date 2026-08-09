@@ -1,7 +1,10 @@
-# routers/telemetry.py
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
+from fastapi.responses import FileResponse
 import asyncpg
-from schemas.telemetry import MachineTelemetry, MachineResponse
+from schemas.telemetry import MachineTelemetry, MachineResponse, UpdateMachineCommand
+import shutil
+import os
+
 
 router = APIRouter(
     prefix="/telemetry",
@@ -54,3 +57,105 @@ async def get_single_machine(machine_id: int, db: asyncpg.Connection = Depends(g
     if not row:
         raise HTTPException(status_code=404, detail=f"Machine with ID {machine_id} not found")
     return dict(row)
+
+@router.post("/machines/{machine_id}/upload-gcode")
+async def upload_gcode(
+    machine_id: int,
+    file: UploadFile = File(...),
+    db: asyncpg.Connection = Depends(get_db)
+):
+    machine = await db.fetchrow("SELECT name FROM machines WHERE id = $1", machine_id)
+    if not machine:
+        raise HTTPException(status_code=404, detail="Machine not found")
+    UPLOAD_DIR = "../g-code"
+    if not os.path.exists(UPLOAD_DIR):
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+    file_path = f"{UPLOAD_DIR}/machine_{machine_id}.gcode"
+    print(file_path)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    await db.execute(
+        "UPDATE machines SET gcode_path = $1 WHERE id = $2",
+        file_path, machine_id
+    )
+    return {
+        'status': 'success',
+        'message': f"G-code file for machine {machine_id} was uploaded successfully",
+        'saved_path': file_path
+    }
+
+@router.get("/machines/{machine_id}/download_g-code")
+async def download_gcode(
+    machine_id: int,
+    db: asyncpg.Connection = Depends(get_db)
+):
+    gcode_path = await db.fetchval(
+        "SELECT gcode_path FROM machines WHERE id = $1",
+        machine_id
+    )
+    if not gcode_path:
+        raise HTTPException(status_code=404, detail="G-code program for machine {machine_id} wasn't found or uploaded yet")
+    if not os.path.exists(gcode_path):
+        raise HTTPException(status_code=404, detail="G-code file missing on server hard drive")
+    return FileResponse(
+        path=gcode_path,
+        media_type="text/plain",
+        filename=f"machine_{machine_id}.gcode"
+    )
+
+@router.get("/machines/{machine_id}/command")
+async def get_machine_command(
+    machine_id: int,
+    db: asyncpg.Connection = Depends(get_db)
+):
+    command = await db.fetchval(
+        "SELECT current_command FROM machines WHERE id = $1",
+        machine_id
+    )
+    if command is None:
+        raise HTTPException(status_code=404, detail="Machine wasn't found or it's not had a command")
+    return {
+        'machine_id': machine_id,
+        'command': command
+    }
+
+@router.post("/machines/{machine_id}/set_command")
+async def set_command(
+    machine_id: int,
+    payload: UpdateMachineCommand,
+    db: asyncpg.Connection = Depends(get_db)
+):
+    command = payload.command
+    current_machine = await db.fetchval(
+        "SELECT name FROM machines WHERE id = $1",
+        machine_id
+    )
+    if not current_machine:
+        raise HTTPException(status_code=404, detail="Current machine doesn't exist")
+    await db.execute(
+        "UPDATE machines SET current_command = $1 WHERE id = $2",
+        command, machine_id
+    )
+    return {
+        'machine_id': machine_id,
+        'command': command,
+        'status': 'success'
+    }
+
+@router.get("/analytics")
+async def get_analytics(
+    db: asyncpg.Connection = Depends(get_db)
+):
+    total_machines = await db.fetchval("SELECT count(*) FROM machines")
+    status_counts = await db.fetch("SELECT status, count(*) as count FROM machines GROUP BY status")
+
+    analytics = {
+        'total': total_machines,
+        'working': 0,
+        'idle': 0,
+        'error': 0
+    }
+    for record in status_counts:
+        row = dict(record)
+        analytics[row['status']] = row['count']
+    return analytics
