@@ -1,15 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from fastapi.responses import FileResponse
+from fastapi.security import APIKeyHeader
 import asyncpg
 from schemas.telemetry import MachineTelemetry, MachineResponse, UpdateMachineCommand
 import shutil
 import os
+from config import ONEC_API_KEY
+from datetime import datetime
 
 
 router = APIRouter(
     prefix="/telemetry",
     tags=["Telemetry"]
 )
+
+api_key_header = APIKeyHeader(name="X-1C-API-Key")
 
 async def get_db(request: Request):
     async with request.app.state.db_pool.acquire() as connection:
@@ -159,3 +164,27 @@ async def get_analytics(
         row = dict(record)
         analytics[row['status']] = row['count']
     return analytics
+
+@router.get('/onec/reports')
+async def get_onec_report(
+    api_key: str = Depends(api_key_header),
+    db: asyncpg.Connection = Depends(get_db)
+):
+    if api_key != ONEC_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid 1C Api Key. Access denied.")
+    rows = await db.fetch(
+        "SELECT id, created_at, telegram_id, action_text FROM action_logs ORDER BY created_at DESC LIMIT 50"
+    )
+    logs_report = []
+    for record in rows:
+        row = dict(record)
+        if row['created_at']:
+            row['created_at'] = row['created_at'].strftime("%Y-%m-%d %H:%M:%S")
+        logs_report.append(row)
+    return {
+        'system': 'Control API',
+        'target': '1C',
+        'extracted_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'logs_count': len(logs_report),
+        'data': logs_report
+    }
