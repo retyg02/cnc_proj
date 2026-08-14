@@ -1,10 +1,24 @@
 <script setup>
+import axios from 'axios';
+
 defineProps({
   machines: {
     type: Array,
     required: true
   }
 })
+
+const emit = defineEmits(['refresh'])
+
+const send_machine_command = async (machine_id, command_name) => {
+  try {
+    await axios.post(`http://127.0.0.1:8000/telemetry/machines/${machine_id}/set_command`, {command: command_name})
+    emit('refresh')
+  } catch (error) {
+    console.log('Error: ', error)
+    alert('Failed sending command')
+  }
+}
 </script>
 
 <template>
@@ -22,10 +36,11 @@ defineProps({
             <th class="px-6 py-3">Status</th>
             <th class="px-6 py-3">Load Rate</th>
             <th class="px-6 py-3">Current Command</th>
+            <th class="px-6 py-3 text-right">Control Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800 text-sm">
-          <tr v-for="machine in machines" :key="machine.id" class="hover:bg-slate-800/30 transition">
+          <tr v-for="machine in machines" :key="machine.id" class="hover:bg-slate-800/30 transition whitespace-nowrap">
             <td class="px-6 py-4 font-mono text-slate-500">#{{ machine.id }}</td>
             <td class="px-6 py-4 font-semibold text-white">{{ machine.name }}</td>
             <td class="px-6 py-4">
@@ -39,12 +54,12 @@ defineProps({
                 {{ machine.status }}
               </span>
             </td>
-            <td class="px-6 py-4 w-1/4">
+            <td class="px-6 py-4 min-w-[200px]">
               <div class="flex items-center space-x-3">
                 <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                   <div 
                     class="h-full rounded-full transition-all duration-500"
-                    :class="machine.load_percent > 80 ? 'bg-amber-500' : 'bg-emerald-500'"
+                    :class="machine.load_percent > 80 ? 'bg-rose-500' : 'bg-emerald-500'"
                     :style="{ width: machine.load_percent + '%' }"
                   ></div>
                 </div>
@@ -55,6 +70,20 @@ defineProps({
               <span class="font-mono bg-slate-950 px-2 py-1 rounded border border-slate-800 text-slate-300">
                 {{ machine.current_command }}
               </span>
+            </td>
+            <td class="px-6 py-4 text-right space-x-2">
+              <button 
+                @click="send_machine_command(machine.id, 'RESET')"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1 px-3 rounded transition cursor-pointer"
+              >
+                RESET
+              </button>
+              <button 
+                @click="send_machine_command(machine.id, 'STOP')"
+                class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-1 px-3 rounded transition cursor-pointer"
+              >
+                STOP
+              </button>
             </td>
           </tr>
         </tbody>

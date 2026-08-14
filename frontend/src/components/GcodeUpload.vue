@@ -1,5 +1,8 @@
 <script setup>
     import { ref } from 'vue'
+    import axios from 'axios'
+
+    const raw_file = ref(null)
 
     const selected_machine_id = ref(1)
     const file_name = ref("")
@@ -15,7 +18,36 @@
 
         if (file) {
             file_name.value = file.name
+            raw_file.value = file
         }
+    }
+
+    const upload_gcode = async () => {
+      if (!raw_file.value) {
+        alert("Please select a G-code file")
+        return
+      }
+      try {
+        const form_data = new FormData()
+
+        form_data.append('file', raw_file.value)
+        form_data.append('machine_id', selected_machine_id.value)
+
+        await axios.post(`http://127.0.0.1:8000/telemetry/machines/${selected_machine_id.value}/upload-gcode`,
+          form_data,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        )
+        alert("Success")
+
+        file_name.value = ''
+        raw_file.value = null
+      } catch (error) {
+        console.log('Error: ', error)
+      }
     }
 </script>
 <template>
@@ -52,7 +84,7 @@
 
       <div class="w-full md:w-1/4">
         <button
-            
+            @click="upload_gcode"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 cursor-pointer">
           Upload to Server
         </button>

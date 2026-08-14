@@ -49,7 +49,7 @@ async def receive_telemetry(telemetry: MachineTelemetry, db: asyncpg.Connection 
 
 @router.get("/machines", response_model=list[MachineResponse])
 async def get_all_machines(db: asyncpg.Connection = Depends(get_db)):
-    rows = await db.fetch("SELECT id, name, status, details, load_percent FROM machines ORDER BY id")
+    rows = await db.fetch("SELECT id, name, status, details, load_percent, current_command FROM machines ORDER BY id")
     return [dict(row) for row in rows]
 
 
@@ -76,7 +76,6 @@ async def upload_gcode(
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR, exist_ok=True)
     file_path = f"{UPLOAD_DIR}/machine_{machine_id}.gcode"
-    print(file_path)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     await db.execute(
