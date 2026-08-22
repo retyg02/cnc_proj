@@ -58,7 +58,7 @@ class Command(BaseCommand):
                 if uncommented_logs:
                     machine_fault_scores = {}
                     
-                    danger_keywords = ['сбой', 'ошибка', 'таймаут', 'задержка', 'не отвечает']
+                    danger_keywords = ['сбой', 'ошибка', 'таймаут', 'задержка', 'не отвечает', 'Превышен температурный порог']
                     
                     for doc in uncommented_logs:
                         m_id = doc['machine_id']

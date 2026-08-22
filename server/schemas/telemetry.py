@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from datetime import datetime
 
 class MachineTelemetry(BaseModel):
     machine_id: int = Field(..., description="Machine ID in the system", example=1)
@@ -16,3 +17,16 @@ class MachineResponse(BaseModel):
 
 class UpdateMachineCommand(BaseModel):
     command: str = Field(..., description="New command (STOP, RESET, PAUSE)", max_length=50, example="STOP")
+
+class MachineCoords(BaseModel):
+    machine_id: int
+    x: float
+    y: float
+    z: float
+    is_cutting: bool
+    session_id: str
+    timestamp: datetime
+
+class MachineLogPayload(BaseModel):
+    machine_id: int
+    action_text: str

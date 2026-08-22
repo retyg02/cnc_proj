@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
 import asyncpg
-from schemas.telemetry import MachineTelemetry, MachineResponse, UpdateMachineCommand
+from schemas.telemetry import MachineTelemetry, MachineResponse, UpdateMachineCommand, MachineCoords, MachineLogPayload
 import shutil
 import os
 from config import ONEC_API_KEY
@@ -20,6 +20,9 @@ async def get_db(request: Request):
     async with request.app.state.db_pool.acquire() as connection:
         yield connection
 
+async def get_mongo_db(request: Request):
+    return request.app.state.mongo_db
+
 @router.post("")
 async def receive_telemetry(telemetry: MachineTelemetry, db: asyncpg.Connection = Depends(get_db)):
     machine = await db.fetchrow("SELECT name, status FROM machines WHERE id = $1", telemetry.machine_id)
@@ -35,12 +38,12 @@ async def receive_telemetry(telemetry: MachineTelemetry, db: asyncpg.Connection 
     """
     await db.execute(update_query, telemetry.status, telemetry.load_percent, telemetry.details, telemetry.machine_id)
     
-    if telemetry.status == 'error':
-        log_text = f"⚙️ System failure: {machine_name} [ID: {telemetry.machine_id}]. Error: {telemetry.details} (Load: {telemetry.load_percent}%)"
-        await db.execute(
-            "INSERT INTO action_logs (telegram_id, action_text, created_at) VALUES (NULL, $1, NOW())", 
-            log_text
-        )
+    # if telemetry.status == 'error':
+    #     log_text = f"⚙️ System failure: {machine_name} [ID: {telemetry.machine_id}]. Error: {telemetry.details} (Load: {telemetry.load_percent}%)"
+    #     await db.execute(
+    #         "INSERT INTO action_logs (telegram_id, action_text, created_at) VALUES (NULL, $1, NOW())", 
+    #         log_text
+    #     )
 
     return {
         'status': 'success',
@@ -186,4 +189,63 @@ async def get_onec_report(
         'extracted_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'logs_count': len(logs_report),
         'data': logs_report
+    }
+
+@router.post('/machines/coords')
+async def post_coords(
+    telemetry: MachineCoords,
+    db = Depends(get_mongo_db) # Подтягиваем нашу зависимость
+):
+    coords_dict = telemetry.dict()
+    
+    # Вставляем данные в асинхронную коллекцию trajectories
+    result = await db.trajectories.insert_one(coords_dict)
+    
+    return {
+        "status": "COORDINATES_SAVED",
+        "mongo_id": str(result.inserted_id)
+    }
+
+
+@router.get('/telemetry/coordinates/{session_id}')
+async def get_coordinates_by_session(
+    session_id: str,
+    db = Depends(get_mongo_db)
+):
+    # Ищем в Монго все документы, у которых session_id равен запрошенному
+    cursor = db.trajectories.find({"session_id": session_id}).sort("timestamp", 1)
+    
+    # Собираем все документы из курсора в обычный Python-список (максимум 1000 точек)
+    points = await cursor.to_list(length=1000)
+    
+    if not points:
+        return []
+        
+    # Форматируем ответ для Vue, убирая внутренний монговский ObjectId (он не сериализуется в JSON)
+    formatted_points = []
+    for p in points:
+        formatted_points.append({
+            "machine_id": p["machine_id"],
+            "x": p["x"],
+            "y": p["y"],
+            "z": p["z"],
+            "is_cutting": p["is_cutting"],
+            "timestamp": p["timestamp"].isoformat() if hasattr(p["timestamp"], "isoformat") else str(p["timestamp"])
+        })
+        
+    return formatted_points
+
+@router.post('/machines/log')
+async def post_log(
+    telemetry: MachineLogPayload,
+    db: asyncpg.Connection = Depends(get_db)
+):
+    await db.execute(
+        "INSERT INTO machine_logs (machine_id, action_text) VALUES ($1, $2)", 
+        telemetry.machine_id, telemetry.action_text
+    )
+    
+    return {
+        'status': 'success',
+        'machine_id': telemetry.machine_id
     }

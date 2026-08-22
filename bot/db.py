@@ -134,7 +134,7 @@ async def get_system_action_logs() -> list:
         database=DB_NAME
     )
     try:
-        rows = await conn.fetch("SELECT created_at, telegram_id, action_text FROM action_logs ORDER BY created_at DESC")
+        rows = await conn.fetch("SELECT created_at, machine_id, action_text FROM machine_logs ORDER BY created_at DESC")
         return [dict(row) for row in rows]
     finally:
         await conn.close()

@@ -126,7 +126,7 @@ async def cmd_view_logs(message: Message, user_data: dict):
     file_content = "=== PRODUCTION TELEMETRY SYSTEM LOGS ===\n\n"
     for log in raw_logs:
         timestamp = log["created_at"].strftime("%Y-%m-%d %H:%M:%S")
-        file_content += f"[{timestamp}] User ID: {log['telegram_id']} -> {log['action_text']}\n"
+        file_content += f"[{timestamp}] Machine ID: {log['machine_id']} -> {log['action_text']}\n"
     text_bytes = file_content.encode("utf-8")    
     document_file = BufferedInputFile(text_bytes, filename="system_logs.txt")
     await message.answer_document(
