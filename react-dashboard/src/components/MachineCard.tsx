@@ -40,22 +40,8 @@ export default function MachineCard({ id, name, status, details, load_percent, o
         {details || 'No data'}
       </p>
 
-      <div className="grid grid-cols-2 gap-3">
-        <button 
-          onClick={() => onReset(id)} 
-          disabled={status !== 'error'} 
-          className="bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 text-slate-200 text-xs py-2 px-3 rounded-xl transition"
-        >
-          Reset error
-        </button>
-        <button 
-          onClick={() => onStop(id)} 
-          disabled={status === 'idle' || status === 'error'} 
-          className="bg-rose-600 hover:bg-rose-700 disabled:opacity-30 disabled:hover:bg-rose-600 text-white font-bold text-xs py-2 px-3 rounded-xl uppercase tracking-wider transition"
-        >
-          STOP
-        </button>
-      </div>
+            
+
     </div>
   );
 }

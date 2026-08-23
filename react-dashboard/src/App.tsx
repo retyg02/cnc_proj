@@ -49,7 +49,7 @@ export default function App() {
   useEffect(() => {
     fetchMachines();
 
-    const interval = setInterval(fetchMachines, 5000);
+    const interval = setInterval(fetchMachines, 500);
     return () => clearInterval(interval);
   }, []);
 
@@ -170,19 +170,29 @@ export default function App() {
                   </section>
                 </div>
               );
-            case 'gcode':
+                        case 'gcode':
               return (
                 <GCodeUpload 
                   machines={machines} 
                   onUpload={async (machineId, file) => {
+                    // Заглушка сессии для совместимости с базой данных
+                    const idleSession = "session_react_" + Date.now();
+
+                    // 1. Фиксируем базовую сессию, чтобы FastAPI пропустил запрос
+                    await axios.post(`http://localhost:8000/telemetry/machines/${machineId}/set_session`, {
+                      session_id: idleSession
+                    });
+
+                    // 2. Упаковываем и пуляем файл G-кода в общую папку /g-code/
                     const formData = new FormData();
                     formData.append('file', file);
 
-                    await axios.post(`http://127.0.0.1:8000/telemetry/machines/${machineId}/upload-gcode`, formData, {
+                    await axios.post(`http://localhost:8000/telemetry/machines/${machineId}/upload-gcode`, formData, {
                       headers: { 'Content-Type': 'multipart/form-data' }
                     });
 
-                    await axios.post(`http://127.0.0.1:8000/telemetry/machines/${machineId}/set_command`, {
+                    // 3. САМОЕ ГЛАВНОЕ: Взводим универсальный RESET на старт ПЛК!
+                    await axios.post(`http://localhost:8000/telemetry/machines/${machineId}/set_command`, {
                       command: 'RESET'
                     });
 
@@ -190,6 +200,7 @@ export default function App() {
                   }}
                 />
               );
+
             case 'analytics':
               return (
                 <Analytics 

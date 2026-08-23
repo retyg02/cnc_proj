@@ -14,6 +14,8 @@ class MachineResponse(BaseModel):
     load_percent: int
     details: str | None = None
     current_command: str | None = None
+    session_id: str | None = None
+    gcode_path: str | None = None
 
 class UpdateMachineCommand(BaseModel):
     command: str = Field(..., description="New command (STOP, RESET, PAUSE)", max_length=50, example="STOP")

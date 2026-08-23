@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 
 import AnalyticsCards from './components/AnalyticsCards.vue'
@@ -7,8 +7,8 @@ import MachinesTable from './components/MachinesTable.vue'
 import GcodeUpload from './components/GcodeUpload.vue'
 import LiveSimulationGrid from './components/LiveSimulationGrid.vue'
 
-
 const factory_name = ref("Factory")
+let updateInterval = null // Хранилище фонового таймера синхронизации
 
 const stats_cards = ref([
   { title: "Total Fleet", value: 0, icon: "🎛️", textColor: "text-white", badgeColor: "bg-blue-500/10 border-blue-500/20 text-blue-400" },
@@ -16,6 +16,7 @@ const stats_cards = ref([
   { title: "Emergency Stop", value: 0, icon: "🚨", textColor: "text-rose-500", badgeColor: "bg-rose-500/10 border-rose-500/20 text-rose-500" }
 ])
 
+// Опрос аналитики
 const fetch_analytics = async () => {
   try {
     const response = await axios.get('http://127.0.0.1:8000/telemetry/analytics')
@@ -25,29 +26,44 @@ const fetch_analytics = async () => {
     stats_cards.value[1].value = data.working
     stats_cards.value[2].value = data.error
   } catch (error) {
-    console.error("Error: ", error)
+    console.error("[❌ FASTAPI ANALYTICS ERROR]: ", error)
   }
 }
 
 const machines_list = ref([])
 
+// Высокочастотный опрос списка машин
 const fetch_machines = async () => {
   try {
     const response = await axios.get('http://localhost:8000/telemetry/machines')
-
     machines_list.value = response.data
-
   } catch (error) {
-    console.error("Error: ", error)
+    console.error("[❌ FASTAPI MACHINES ERROR]: ", error)
   }
 }
 
-onMounted(() => {
+// Запуск сквозного циклического опроса
+const startLiveSync = () => {
+  // Вызываем разово при старте, чтобы не ждать первого тика таймера
   fetch_analytics()
   fetch_machines()
+
+  // Включаем такт 500 мс — синхронно с промышленным C# шлюзом!
+  updateInterval = setInterval(() => {
+    fetch_analytics()
+    fetch_machines()
+  }, 500)
+}
+
+onMounted(() => {
+  startLiveSync() // Включаем живую реактивную ось цеха
 })
 
+onUnmounted(() => {
+  if (updateInterval) clearInterval(updateInterval) // Чистим ресурсы
+})
 </script>
+
 
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">

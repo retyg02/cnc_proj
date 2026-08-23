@@ -36,7 +36,7 @@ const send_machine_command = async (machine_id, command_name) => {
             <th class="px-6 py-3">Status</th>
             <th class="px-6 py-3">Load Rate</th>
             <th class="px-6 py-3">Current Command</th>
-            <th class="px-6 py-3 text-right">Control Actions</th>
+            
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800 text-sm">
@@ -71,20 +71,7 @@ const send_machine_command = async (machine_id, command_name) => {
                 {{ machine.current_command }}
               </span>
             </td>
-            <td class="px-6 py-4 text-right space-x-2">
-              <!-- <button 
-                @click="send_machine_command(machine.id, 'RESET')"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1 px-3 rounded transition cursor-pointer"
-              >
-                RESET
-              </button> -->
-              <button 
-                @click="send_machine_command(machine.id, 'STOP')"
-                class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-1 px-3 rounded transition cursor-pointer"
-              >
-                STOP
-              </button>
-            </td>
+            
           </tr>
         </tbody>
       </table>
