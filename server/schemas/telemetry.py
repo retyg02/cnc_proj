@@ -30,3 +30,6 @@ class MachineCoords(BaseModel):
 class MachineLogPayload(BaseModel):
     machine_id: int
     action_text: str
+
+class SessionPayload(BaseModel):
+    session_id: str

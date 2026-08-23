@@ -72,12 +72,12 @@ const send_machine_command = async (machine_id, command_name) => {
               </span>
             </td>
             <td class="px-6 py-4 text-right space-x-2">
-              <button 
+              <!-- <button 
                 @click="send_machine_command(machine.id, 'RESET')"
                 class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1 px-3 rounded transition cursor-pointer"
               >
                 RESET
-              </button>
+              </button> -->
               <button 
                 @click="send_machine_command(machine.id, 'STOP')"
                 class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-1 px-3 rounded transition cursor-pointer"

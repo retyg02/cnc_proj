@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
 import asyncpg
-from schemas.telemetry import MachineTelemetry, MachineResponse, UpdateMachineCommand, MachineCoords, MachineLogPayload
+from schemas.telemetry import MachineTelemetry, MachineResponse, UpdateMachineCommand, MachineCoords, MachineLogPayload, SessionPayload
 import shutil
 import os
 from config import ONEC_API_KEY
@@ -78,12 +78,12 @@ async def upload_gcode(
     UPLOAD_DIR = "../g-code"
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR, exist_ok=True)
-    file_path = f"{UPLOAD_DIR}/machine_{machine_id}.gcode"
+    file_path = f"{UPLOAD_DIR}/machine_{machine_id}.nc"
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     await db.execute(
         "UPDATE machines SET gcode_path = $1 WHERE id = $2",
-        file_path, machine_id
+        f'machine_{machine_id}.nc', machine_id
     )
     return {
         'status': 'success',
@@ -132,6 +132,7 @@ async def set_command(
     payload: UpdateMachineCommand,
     db: asyncpg.Connection = Depends(get_db)
 ):
+    print(f"[TRACE 2.2] FastAPI принял команду. Machine: {machine_id}, Command: {payload.command}")
     command = payload.command
     current_machine = await db.fetchval(
         "SELECT name FROM machines WHERE id = $1",
@@ -207,7 +208,7 @@ async def post_coords(
     }
 
 
-@router.get('/telemetry/coordinates/{session_id}')
+@router.get('/coordinates/{session_id}')
 async def get_coordinates_by_session(
     session_id: str,
     db = Depends(get_mongo_db)
@@ -249,3 +250,16 @@ async def post_log(
         'status': 'success',
         'machine_id': telemetry.machine_id
     }
+
+@router.post('/machines/{machine_id}/set_session')
+async def set_machine_session(
+    machine_id: int, 
+    payload: SessionPayload, 
+    db = Depends(get_db)
+):        
+    print(f"[TRACE 2.1] FastAPI принял сессию. Machine: {machine_id}, Session_ID: {payload.session_id}")
+    await db.execute("UPDATE machines SET session_id = $1 WHERE id = $2;", 
+        payload.session_id, 
+        machine_id
+    )
+    return {"status": "SESSION_INITIALIZED"}

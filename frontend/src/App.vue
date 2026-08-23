@@ -5,6 +5,8 @@ import axios from 'axios'
 import AnalyticsCards from './components/AnalyticsCards.vue'
 import MachinesTable from './components/MachinesTable.vue'
 import GcodeUpload from './components/GcodeUpload.vue'
+import LiveSimulationGrid from './components/LiveSimulationGrid.vue'
+
 
 const factory_name = ref("Factory")
 
@@ -68,7 +70,7 @@ onMounted(() => {
       <AnalyticsCards :cards="stats_cards" />
       <GcodeUpload />
       <MachinesTable :machines="machines_list" @refresh="fetch_machines" />
-
+      <LiveSimulationGrid :machines="machines_list" />
     </main>
 
   </div>

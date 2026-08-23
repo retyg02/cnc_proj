@@ -5,6 +5,9 @@ from config import DB_HOST, DB_NAME, DB_PASS, DB_USER, DB_PORT, MONGO_HOST, MONG
 from routers.telemetry import router as telemetry_router
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from fastapi.exceptions import RequestValidationError
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
 
 @asynccontextmanager
@@ -47,7 +50,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,3 +66,14 @@ async def read_root():
         'version': '1.0.0'
     }
 
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    # Python намертво выведет в терминал uvicorn, КАКОЕ ИМЕННО поле не понравилось серверу!
+    print(f"[🚨 PYDANTIC VALIDATION ERROR]: {exc.errors()}")
+    print(f"[📦 RAW BODY]: {await request.body()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": str(await request.body())}
+    )
