@@ -11,6 +11,16 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# 📂 МАГИЯ ПУТИ: Находим корень проекта (выходим на 1 уровень вверх из папки бота)
+BASE_DIR = Path(__file__).resolve().parent.parent
+dotenv_path = BASE_DIR / '.env'
+
+# Загружаем файл .env из корня в память Python
+load_dotenv(dotenv_path=dotenv_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,18 +86,19 @@ WSGI_APPLICATION = 'ai_engine.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',          
-        'PASSWORD': '',  
-        'HOST': 'PostgreSQL-16',
-        'PORT': '5432',
+        'NAME': os.getenv('DB_NAME', 'postgres'),
+        'USER': os.getenv('DB_USER', 'postgres'),          
+        'PASSWORD': os.getenv('DB_PASS', 'password'),  
+        'HOST': os.getenv('DB_HOST', 'PostgreSQL-16'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
 # Настройки MongoDB (NoSQL)
-MONGO_HOST = 'MongoDB-5.0'
-MONGO_PORT = 27017
-MONGO_DB_NAME = 'ai_analytics_db'
+MONGO_HOST = os.getenv('MONGO_HOST', 'MongoDB-5.0')
+MONGO_PORT = int(os.getenv('MONGO_PORT', '27017')) # Порт должен быть числом int в Django
+MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'ai_analytics_db')
+
 
 
 

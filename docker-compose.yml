@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: factory_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres        
+      POSTGRES_PASSWORD: password 
+      POSTGRES_DB: postgres    
+    ports:
+      - "5432:5432"            
+    volumes:
+      - postgres_data:/var/lib/postgresql/data 
+  mongo_db:
+    image: mongo:6.0
+    container_name: factory_mongo
+    restart: always
+    ports:
+      - "27017:27017"         
+    volumes:
+      - mongo_data:/data/db
+
+  redis_cache:
+    image: redis:7-alpine
+    container_name: factory_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  backend_api:
+    build: ./server
+    container_name: factory_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres_db             
+      - mongo_db
+
+
+  telegram_bot:
+    build: ./bot
+    container_name: factory_bot
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - postgres_db
+
+  ml_predictor:
+    build: ./predictor
+    container_name: factory_predictor
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo_db
+
+  vue_frontend:
+    build: ./frontend
+    container_name: factory_vue
+    restart: always
+    ports:
+      - "80:80"               
+
+  # 📊 РЕАКТ-ДАШБОРД
+  react_frontend:
+    build: ./react-dashboard
+    container_name: factory_react
+    restart: always
+    ports:
+      - "81:80"              
+
+volumes:
+  postgres_data:
+  mongo_data:
