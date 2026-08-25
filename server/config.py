@@ -24,3 +24,4 @@ ONEC_API_KEY = "secret_123"
 MONGO_HOST = os.getenv('MONGO_HOST', 'MongoDB-5.0')
 MONGO_PORT = int(os.getenv('MONGO_PORT', '27017')) # Порт должен быть числом int в Django
 MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'ai_analytics_db')
+

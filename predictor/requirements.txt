@@ -1,3 +1,4 @@
 django
 pymongo
 pydantic-settings
+psycopg[binary]

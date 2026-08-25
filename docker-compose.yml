@@ -13,14 +13,27 @@ services:
       - "5432:5432"            
     volumes:
       - postgres_data:/var/lib/postgresql/data 
+    # 👇 ЖЕСТКАЯ ПРОВЕРКА: Готов ли Postgres к бою?
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   mongo_db:
-    image: mongo:6.0
+    image: mongo:4.4.29
     container_name: factory_mongo
     restart: always
     ports:
       - "27017:27017"         
     volumes:
       - mongo_data:/data/db
+    # 👇 ЖЕСТКАЯ ПРОВЕРКА: Готов ли Mongo принимать подключения?
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis_cache:
     image: redis:7-alpine
@@ -37,10 +50,14 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    volumes:
+      - ./g-code:/g-code
+    # 👇 Теперь FastAPI ждет, пока базы СТАНУТ ЗДОРОВЫМИ, а не просто запустятся
     depends_on:
-      - postgres_db             
-      - mongo_db
-
+      postgres_db:
+        condition: service_healthy
+      mongo_db:
+        condition: service_healthy
 
   telegram_bot:
     build: ./bot
@@ -49,7 +66,8 @@ services:
     env_file:
       - .env
     depends_on:
-      - postgres_db
+      postgres_db:
+        condition: service_healthy
 
   ml_predictor:
     build: ./predictor
@@ -57,23 +75,32 @@ services:
     restart: always
     env_file:
       - .env
+    # 💡 Лайфхак: если FastAPI к нему не стучится по HTTP, порты можно вообще убрать! 
+    # Оставляем только если фронт/бэк делают к нему прямые запросы.
+    command: python manage.py predict_engine
     ports:
       - "8080:8080"
     depends_on:
-      - mongo_db
+      mongo_db:
+        condition: service_healthy
+      postgres_db: # 👈 Обязательно добавляем зависимость от Postgres, ведь скрипт читает из него!
+        condition: service_healthy
 
   vue_frontend:
     build: ./frontend
     container_name: factory_vue
     restart: always
+    env_file:
+      - .env # 👈 Пробрасываем .env, чтобы фронт видел урл бэкенда
     ports:
       - "80:80"               
 
-  # 📊 РЕАКТ-ДАШБОРД
   react_frontend:
     build: ./react-dashboard
     container_name: factory_react
     restart: always
+    env_file:
+      - .env # 👈 Пробрасываем .env
     ports:
       - "81:80"              
 

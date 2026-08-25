@@ -7,6 +7,7 @@ import shutil
 import os
 from config import ONEC_API_KEY
 from datetime import datetime
+from pathlib import Path
 
 
 router = APIRouter(
@@ -75,10 +76,12 @@ async def upload_gcode(
     machine = await db.fetchrow("SELECT name FROM machines WHERE id = $1", machine_id)
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not found")
-    UPLOAD_DIR = "../g-code"
-    if not os.path.exists(UPLOAD_DIR):
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-    file_path = f"{UPLOAD_DIR}/machine_{machine_id}.nc"
+
+    current_file = Path(__file__).resolve()
+    SERVER_DIR = current_file.parent.parent
+    UPLOAD_DIR = SERVER_DIR.parent / "g-code"
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    file_path = UPLOAD_DIR / f"machine_{machine_id}.nc"
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     await db.execute(
@@ -88,7 +91,7 @@ async def upload_gcode(
     return {
         'status': 'success',
         'message': f"G-code file for machine {machine_id} was uploaded successfully",
-        'saved_path': file_path
+        'saved_path': str(file_path.resolve())
     }
 
 @router.get("/machines/{machine_id}/download_g-code")
