@@ -1,0 +1,6 @@
+[submodule "hardware_source"]
+	path = hardware_source
+	url = https://github.com/retyg02/cnc_hardware
+[submodule "ospanel_source"]
+	path = ospanel_source
+	url = https://github.com/retyg02/cnc_ospanel
