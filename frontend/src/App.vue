@@ -8,7 +8,7 @@ import GcodeUpload from './components/GcodeUpload.vue'
 import LiveSimulationGrid from './components/LiveSimulationGrid.vue'
 
 const factory_name = ref("Factory")
-let updateInterval = null // Хранилище фонового таймера синхронизации
+let updateInterval = null 
 
 const stats_cards = ref([
   { title: "Total Fleet", value: 0, icon: "🎛️", textColor: "text-white", badgeColor: "bg-blue-500/10 border-blue-500/20 text-blue-400" },
@@ -32,7 +32,6 @@ const fetch_analytics = async () => {
 
 const machines_list = ref([])
 
-// Высокочастотный опрос списка машин
 const fetch_machines = async () => {
   try {
     const response = await axios.get('http://localhost:8000/telemetry/machines')
@@ -42,13 +41,11 @@ const fetch_machines = async () => {
   }
 }
 
-// Запуск сквозного циклического опроса
 const startLiveSync = () => {
-  // Вызываем разово при старте, чтобы не ждать первого тика таймера
   fetch_analytics()
   fetch_machines()
 
-  // Включаем такт 500 мс — синхронно с промышленным C# шлюзом!
+  
   updateInterval = setInterval(() => {
     fetch_analytics()
     fetch_machines()
@@ -56,11 +53,11 @@ const startLiveSync = () => {
 }
 
 onMounted(() => {
-  startLiveSync() // Включаем живую реактивную ось цеха
+  startLiveSync() 
 })
 
 onUnmounted(() => {
-  if (updateInterval) clearInterval(updateInterval) // Чистим ресурсы
+  if (updateInterval) clearInterval(updateInterval) 
 })
 </script>
 

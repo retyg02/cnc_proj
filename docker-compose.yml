@@ -13,7 +13,6 @@ services:
       - "5432:5432"            
     volumes:
       - postgres_data:/var/lib/postgresql/data 
-    # 👇 ЖЕСТКАЯ ПРОВЕРКА: Готов ли Postgres к бою?
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -28,7 +27,6 @@ services:
       - "27017:27017"         
     volumes:
       - mongo_data:/data/db
-    # 👇 ЖЕСТКАЯ ПРОВЕРКА: Готов ли Mongo принимать подключения?
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
       interval: 5s
@@ -52,7 +50,6 @@ services:
       - .env
     volumes:
       - ./g-code:/g-code
-    # 👇 Теперь FastAPI ждет, пока базы СТАНУТ ЗДОРОВЫМИ, а не просто запустятся
     depends_on:
       postgres_db:
         condition: service_healthy
@@ -75,15 +72,13 @@ services:
     restart: always
     env_file:
       - .env
-    # 💡 Лайфхак: если FastAPI к нему не стучится по HTTP, порты можно вообще убрать! 
-    # Оставляем только если фронт/бэк делают к нему прямые запросы.
     command: python manage.py predict_engine
     ports:
       - "8080:8080"
     depends_on:
       mongo_db:
         condition: service_healthy
-      postgres_db: # 👈 Обязательно добавляем зависимость от Postgres, ведь скрипт читает из него!
+      postgres_db: 
         condition: service_healthy
 
   vue_frontend:
@@ -91,7 +86,7 @@ services:
     container_name: factory_vue
     restart: always
     env_file:
-      - .env # 👈 Пробрасываем .env, чтобы фронт видел урл бэкенда
+      - .env 
     ports:
       - "80:80"               
 
@@ -100,7 +95,7 @@ services:
     container_name: factory_react
     restart: always
     env_file:
-      - .env # 👈 Пробрасываем .env
+      - .env 
     ports:
       - "81:80"              
 

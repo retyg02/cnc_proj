@@ -5,7 +5,7 @@ from django.conf import settings
 from pymongo import MongoClient 
 
 class Command(BaseCommand):
-    help = 'ИИ-Предиктор: Анализ логов телеметрии и предсказание аварий ЧПУ'
+    #help = 'ИИ-Предиктор: Анализ логов телеметрии и предсказание аварий ЧПУ'
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS('🚀 ИИ-Движок Django успешно запущен...'))

@@ -175,15 +175,15 @@ export default function App() {
                 <GCodeUpload 
                   machines={machines} 
                   onUpload={async (machineId, file) => {
-                    // Заглушка сессии для совместимости с базой данных
+                    
                     const idleSession = "session_react_" + Date.now();
 
-                    // 1. Фиксируем базовую сессию, чтобы FastAPI пропустил запрос
+                    
                     await axios.post(`http://localhost:8000/telemetry/machines/${machineId}/set_session`, {
                       session_id: idleSession
                     });
 
-                    // 2. Упаковываем и пуляем файл G-кода в общую папку /g-code/
+                    
                     const formData = new FormData();
                     formData.append('file', file);
 
@@ -191,7 +191,7 @@ export default function App() {
                       headers: { 'Content-Type': 'multipart/form-data' }
                     });
 
-                    // 3. САМОЕ ГЛАВНОЕ: Взводим универсальный RESET на старт ПЛК!
+                    
                     await axios.post(`http://localhost:8000/telemetry/machines/${machineId}/set_command`, {
                       command: 'RESET'
                     });

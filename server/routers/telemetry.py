@@ -135,7 +135,7 @@ async def set_command(
     payload: UpdateMachineCommand,
     db: asyncpg.Connection = Depends(get_db)
 ):
-    print(f"[TRACE 2.2] FastAPI принял команду. Machine: {machine_id}, Command: {payload.command}")
+    
     command = payload.command
     current_machine = await db.fetchval(
         "SELECT name FROM machines WHERE id = $1",
@@ -198,11 +198,10 @@ async def get_onec_report(
 @router.post('/machines/coords')
 async def post_coords(
     telemetry: MachineCoords,
-    db = Depends(get_mongo_db) # Подтягиваем нашу зависимость
+    db = Depends(get_mongo_db) 
 ):
     coords_dict = telemetry.dict()
     
-    # Вставляем данные в асинхронную коллекцию trajectories
     result = await db.trajectories.insert_one(coords_dict)
     
     return {
@@ -216,16 +215,14 @@ async def get_coordinates_by_session(
     session_id: str,
     db = Depends(get_mongo_db)
 ):
-    # Ищем в Монго все документы, у которых session_id равен запрошенному
     cursor = db.trajectories.find({"session_id": session_id}).sort("timestamp", 1)
     
-    # Собираем все документы из курсора в обычный Python-список (максимум 1000 точек)
     points = await cursor.to_list(length=1000)
     
     if not points:
         return []
         
-    # Форматируем ответ для Vue, убирая внутренний монговский ObjectId (он не сериализуется в JSON)
+    
     formatted_points = []
     for p in points:
         formatted_points.append({
@@ -260,7 +257,6 @@ async def set_machine_session(
     payload: SessionPayload, 
     db = Depends(get_db)
 ):        
-    print(f"[TRACE 2.1] FastAPI принял сессию. Machine: {machine_id}, Session_ID: {payload.session_id}")
     await db.execute("UPDATE machines SET session_id = $1 WHERE id = $2;", 
         payload.session_id, 
         machine_id

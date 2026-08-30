@@ -12,7 +12,6 @@ from fastapi.responses import JSONResponse
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- НАСТРОЙКА POSTGRESQL (Твой родной код) ---
     app.state.db_pool = await asyncpg.create_pool(
         host=DB_HOST,
         port=DB_PORT,
@@ -23,8 +22,7 @@ async def lifespan(app: FastAPI):
         max_size=20
     )
     
-    # --- НАСТРОЙКА MONGODB (Добавляем рядышком) ---
-    # Переменные MONGO_HOST, MONGO_PORT, MONGO_DB_NAME импортируй из конфига
+    
     mongo_url = f"mongodb://{MONGO_HOST}:{MONGO_PORT}"
     app.state.mongo_client = AsyncIOMotorClient(mongo_url)
     app.state.mongo_db = app.state.mongo_client[MONGO_DB_NAME]
@@ -37,7 +35,7 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    # --- ЗАКРЫТИЕ КЛИЕНТОВ ПРИ ОСТАНОВКЕ СЕРВЕРА ---
+    
     await app.state.db_pool.close()
     app.state.mongo_client.close()
 
@@ -63,16 +61,16 @@ async def read_root():
     return {
         'status': 'online',
         'system': 'Industrial Telemetry Control',
-        'version': '1.0.0'
+        'version': '0.9.0'
     }
 
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    # Python намертво выведет в терминал uvicorn, КАКОЕ ИМЕННО поле не понравилось серверу!
-    print(f"[🚨 PYDANTIC VALIDATION ERROR]: {exc.errors()}")
-    print(f"[📦 RAW BODY]: {await request.body()}")
+    
+    print(f"[PYDANTIC VALIDATION ERROR]: {exc.errors()}")
+    print(f"[RAW BODY]: {await request.body()}")
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors(), "body": str(await request.body())}

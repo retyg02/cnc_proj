@@ -11,7 +11,7 @@ export default function Analytics({onStopAll, total_count, error_count}: Analyti
         Dispatcher panel
       </h2>
 
-      {/* Сетка быстрых отчетов по цеху */}
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-[#111c44] border border-slate-800 p-5 rounded-2xl">
           <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">

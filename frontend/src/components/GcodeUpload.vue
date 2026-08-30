@@ -37,7 +37,7 @@
       }
       try {
         const form_data = new FormData()
-        console.log("[TRACE 1.1] Клик по кнопке. MachineId:", props.machineId);
+        
 
         form_data.append('file', raw_file.value)
         form_data.append('machine_id', props.machineId)
@@ -50,7 +50,7 @@
             }
           }
         )
-        console.log("[TRACE 1.2] Файл успешно загружен на сервер.");
+        
         
         alert("Success")
 
@@ -63,24 +63,24 @@
           String(current_time.getMinutes()).padStart(2, '0');
         
         console.log("[TRACE 1.3] Сгенерирован сессионный ID:", generated_session_id);
-        // 3. Отправляем сессию на наш новый отдельный роут FastAPI
+        
         await axios.post(`http://localhost:8000/telemetry/machines/${props.machineId}/set_session`, {
           session_id: generated_session_id
         })
         console.log("[TRACE 1.4] Запрос set_session улетел на FastAPI.");
         const commandPayload = {
-          command: "RESET" // Передаем RESET как в Example Value на твоем скрине
+          command: "RESET" 
         }
     
-        // Делаем точный POST запрос на твой роут из Swagger
+        
         await axios.post(`http://localhost:8000/telemetry/machines/${props.machineId}/set_command`, commandPayload)
         console.log("[TRACE 1.5] Команда RESET улетела на FastAPI.");
         ///////////////////////////////////////////////////
-        raw_file.value = null      // Очищаем файл из памяти Vue
-        file_name.value = ""       // Стираем имя файла с интерфейса экрана
+        raw_file.value = null      
+        file_name.value = ""      
         
         if (file_input.value) {
-            file_input.value.value = "" // Сбрасываем внутренний кэш самого браузера для инпута
+            file_input.value.value = "" 
         }
       } catch (error) {
         console.log('Error: ', error)
